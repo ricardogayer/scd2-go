@@ -1,0 +1,21 @@
+version: "2"
+sql:
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/dw/query.sql
+    gen:
+      go:
+        package: dw
+        out: internal/dw
+        sql_package: pgx/v5
+        emit_json_tags: true
+
+  - engine: postgresql
+    schema: db/source/schema.sql
+    queries: db/source/query.sql
+    gen:
+      go:
+        package: source
+        out: internal/source
+        sql_package: pgx/v5
+        emit_json_tags: true

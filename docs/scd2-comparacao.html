@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SCD2 com e sem função</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: uma coluna de leitura; nos trechos "lado a lado" a grade abre em duas
+   colunas fixas, função à esquerda (azul) e sem função à direita (laranja). */
+:root {
+  --bg: #f6f7f8;
+  --surface: #fcfcfb;
+  --ink: #15191e;
+  --ink-2: #4a5059;
+  --ink-3: #6f7680;
+  --rule: #dde1e6;
+  --code-bg: #eef1f4;
+  --accent: #23466e;
+  --fn: #2a78d6;      /* série 1: com função */
+  --steps: #eb6834;   /* série 2: sem função */
+  --steps-ix: #1baf7a;/* série 3: sem função + índice único */
+  --fn-soft: #e3eefb;
+  --steps-soft: #fdece4;
+  --warn: #9a5b00;
+  --warn-soft: #fbf1df;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121417; --surface: #1a1c1f; --ink: #eceef0; --ink-2: #b9bec5; --ink-3: #8d939b;
+    --rule: #2c3036; --code-bg: #20242a; --accent: #9cc0ea;
+    --fn: #3987e5; --steps: #d95926; --steps-ix: #199e70;
+    --fn-soft: #1b2a3d; --steps-soft: #36211a; --warn: #e6b45c; --warn-soft: #2e2516;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121417; --surface: #1a1c1f; --ink: #eceef0; --ink-2: #b9bec5; --ink-3: #8d939b;
+  --rule: #2c3036; --code-bg: #20242a; --accent: #9cc0ea;
+  --fn: #3987e5; --steps: #d95926; --steps-ix: #199e70;
+  --fn-soft: #1b2a3d; --steps-soft: #36211a; --warn: #e6b45c; --warn-soft: #2e2516;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.6 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 56px; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 1.6rem; font-weight: 600; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; }
+section { display: grid; gap: 20px; }
+.eyebrow {
+  font: 500 0.75rem/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.lede { font-size: 1.125rem; color: var(--ink-2); }
+code, .mono { font-family: var(--font-mono); font-size: 0.9em; }
+:not(pre) > code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header { display: grid; gap: 16px; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: 500 0.85rem/1 var(--font-mono); padding: 7px 10px; border-radius: 6px;
+  border: 1px solid var(--rule); background: var(--surface);
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.dot.fn { background: var(--fn); } .dot.steps { background: var(--steps); } .dot.ix { background: var(--steps-ix); }
+
+/* Fluxo: passos comuns numa faixa, o passo 5 se abre em dois. */
+.flow { display: grid; gap: 10px; }
+.flow ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.step {
+  display: grid; grid-template-columns: 2.2rem 1fr; gap: 12px; align-items: start;
+  padding: 12px 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--rule);
+}
+.step .n { font: 600 0.95rem/1.5 var(--font-mono); color: var(--ink-3); }
+.step b { font-weight: 600; }
+.step p { color: var(--ink-2); font-size: 0.95rem; }
+.fork { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fork .step.fn { border-color: var(--fn); background: var(--fn-soft); }
+.fork .step.steps { border-color: var(--steps); background: var(--steps-soft); }
+.label-fn, .label-steps {
+  font: 600 0.72rem/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 6px; margin-bottom: 4px;
+}
+
+/* Lado a lado */
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.col { min-width: 0; display: grid; gap: 10px; }
+.col-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px;
+  padding-bottom: 8px; border-bottom: 3px solid var(--rule);
+}
+.col.fn .col-head { border-bottom-color: var(--fn); }
+.col.steps .col-head { border-bottom-color: var(--steps); }
+.col-head .file { font: 0.82rem/1.3 var(--font-mono); color: var(--ink-3); overflow-wrap: anywhere; }
+.col p.note { color: var(--ink-2); font-size: 0.95rem; }
+pre {
+  margin: 0; padding: 14px 16px; background: var(--code-bg); border-radius: 8px;
+  font: 0.8rem/1.55 var(--font-mono); overflow: auto; max-height: 560px; tab-size: 4;
+}
+pre .c { color: var(--ink-3); }
+.pair-label { font: 600 0.8rem/1 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+thead th { font: 600 0.78rem/1.2 var(--font-mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
+tbody th { font-weight: 500; color: var(--ink-2); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 0.88rem; white-space: nowrap; }
+.th-fn { color: var(--fn); } .th-steps { color: var(--steps); }
+
+/* Benchmark */
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button {
+  font: 500 0.88rem/1 var(--font-body); color: var(--ink-2); background: transparent;
+  border: 0; padding: 9px 14px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.9rem; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.panels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.panel { min-width: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 14px 8px; display: grid; gap: 4px; }
+.panel h3 { font-size: 1rem; }
+.panel .sub { font-size: 0.82rem; color: var(--ink-3); }
+.panel svg { width: 100%; height: auto; display: block; overflow: visible; }
+.panel svg text { font-family: var(--font-body); fill: var(--ink-2); font-size: 11px; }
+.panel svg .val { fill: var(--ink); font-family: var(--font-mono); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.panel svg .cat { fill: var(--ink); font-weight: 500; font-size: 11.5px; }
+.panel svg .grid { stroke: var(--rule); stroke-width: 1; }
+.panel svg .hit { fill: transparent; cursor: default; }
+.panel svg .bar.fn { fill: var(--fn); } .panel svg .bar.steps { fill: var(--steps); } .panel svg .bar.ix { fill: var(--steps-ix); }
+.panel svg g.row.dim .bar { opacity: 0.35; }
+.tip {
+  position: fixed; pointer-events: none; z-index: 20; min-width: 200px;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 8px;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.14); padding: 10px 12px; font-size: 0.85rem;
+}
+.tip .t { font-weight: 600; margin-bottom: 4px; }
+.tip .r { display: flex; justify-content: space-between; gap: 16px; font-variant-numeric: tabular-nums; }
+.tip .r span:last-child { font-family: var(--font-mono); }
+.findings { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.findings li { padding-left: 18px; position: relative; max-width: 80ch; }
+.findings li::before { content: ""; position: absolute; left: 0; top: 0.65em; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
+details { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; }
+summary { cursor: pointer; font-weight: 500; }
+details[open] summary { margin-bottom: 10px; }
+.meta { font-size: 0.85rem; color: var(--ink-3); }
+
+.callout {
+  border-left: 4px solid var(--warn); background: var(--warn-soft); border-radius: 0 10px 10px 0;
+  padding: 16px 18px; display: grid; gap: 12px;
+}
+.callout .eyebrow { color: var(--warn); }
+
+@media (max-width: 900px) {
+  .panels { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .pair, .fork { grid-template-columns: 1fr; }
+  body { padding-block: 24px 48px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .panel svg .bar { transition: opacity 120ms ease; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">scd2-go · dw.dim_sales_territory · PostgreSQL 18</div>
+    <h1>SCD2 com e sem função</h1>
+    <p class="lede prose">O mesmo carregador Go tem duas implementações das regras SCD Tipo 2. A flag <code>-strategy</code> escolhe qual roda. Extração, COPY, staging, guardas, transação e log são comuns; só o passo 5 muda.</p>
+    <div class="tags">
+      <span class="tag"><span class="dot fn"></span>-strategy funcao · MERGE em PL/pgSQL</span>
+      <span class="tag"><span class="dot steps"></span>-strategy sem-funcao · queries sqlc</span>
+    </div>
+  </header>
+
+  <section aria-labelledby="fluxo">
+    <h2 id="fluxo">Onde as duas se separam</h2>
+    <div class="flow">
+      <ol>
+        <li class="step"><span class="n">1</span><div><b>Advisory lock</b><p><code>pg_advisory_xact_lock</code> impede duas cargas simultâneas.</p></div></li>
+        <li class="step"><span class="n">2</span><div><b>TRUNCATE da staging</b><p>Staging <code>UNLOGGED</code>, com <code>row_hash</code> gerado pelo banco.</p></div></li>
+        <li class="step"><span class="n">3</span><div><b>Extração em pipeline + COPY binário</b><p>Keyset na origem numa goroutine; <code>:copyfrom</code> do sqlc na staging.</p></div></li>
+        <li class="step"><span class="n">4</span><div><b>Guardas</b><p>Origem vazia ou exclusões acima de <code>-max-delete-pct</code> abortam com código 3.</p></div></li>
+      </ol>
+      <div class="fork">
+        <div class="step fn"><span class="n">5</span><div>
+          <div class="label-fn"><span class="dot fn"></span>Com função</div>
+          <b>Uma chamada: <code>SELECT dw.scd2_merge_sales_territory($1)</code></b>
+          <p>Dentro da função: <code>ANALYZE</code>, um MERGE que fecha, insere e marca exclusões, e o INSERT em <code>dw.etl_log</code>. Depois, o Go lê o log.</p>
+        </div></div>
+        <div class="step steps"><span class="n">5</span><div>
+          <div class="label-steps"><span class="dot steps"></span>Sem função</div>
+          <b>Quatro comandos sqlc, em ordem, mais o log</b>
+          <p><code>ANALYZE</code> → <code>ExpireChanged</code> → <code>CloseDeleted</code> → <code>InsertNewVersions</code> → <code>InsertEtlLog</code>. O Go soma as contagens e confere que cada versão fechada ganhou uma nova.</p>
+        </div></div>
+      </div>
+      <ol>
+        <li class="step"><span class="n">6</span><div><b>COMMIT</b><p>A restrição “uma versão atual por chave” (<code>EXCLUDE … DEFERRABLE</code>) é checada aqui, nas duas.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section aria-labelledby="lado">
+    <h2 id="lado">Lado a lado</h2>
+    <p class="prose">À esquerda, o que pertence só à estratégia com função; à direita, só à estratégia sem função. O ponto de escolha fica em <code>internal/scd2/loader.go</code>:</p>
+    <pre>var logRow dw.DwEtlLog
+scd2Start := time.Now()
+switch l.cfg.Strategy {
+case StrategySteps:
+	logRow, err = applyWithoutFunction(ctx, tx, q, staged)
+default:
+	logRow, err = applyWithFunction(ctx, q)
+}
+if err != nil {
+	return Result{}, err
+}</pre>
+
+    <div class="pair-label">Código Go</div>
+    <div class="pair">
+      <div class="col fn">
+        <div class="col-head"><span class="label-fn"><span class="dot fn"></span>Com função</span><span class="file">internal/scd2/com_funcao.go</span></div>
+        <p class="note">O Go só chama a função e lê a linha de log que ela gravou.</p>
+        <pre>func applyWithFunction(ctx context.Context, q *dw.Queries) (dw.DwEtlLog, error) {
+	logID, err := q.MergeSalesTerritory(ctx, ProcessName)
+	if err != nil {
+		return dw.DwEtlLog{}, fmt.Errorf(&quot;merge scd2: %w&quot;, err)
+	}
+	logRow, err := q.GetEtlLog(ctx, logID)
+	if err != nil {
+		return dw.DwEtlLog{}, fmt.Errorf(&quot;ler etl_log: %w&quot;, err)
+	}
+	return logRow, nil
+}</pre>
+      </div>
+      <div class="col steps">
+        <div class="col-head"><span class="label-steps"><span class="dot steps"></span>Sem função</span><span class="file">internal/scd2/sem_funcao.go</span></div>
+        <p class="note">O Go orquestra os passos. A ordem importa: o INSERT depende de os UPDATEs já terem fechado as versões.</p>
+        <pre><span class="c">// applyWithoutFunction aplica as regras SCD2 na ordem:</span>
+<span class="c">// fechar alterados -&gt; fechar excluídos -&gt; inserir o que ficou sem versão atual.</span>
+<span class="c">// A ordem importa: o INSERT depende dos UPDATEs já terem fechado as versões.</span>
+func applyWithoutFunction(ctx context.Context, tx pgx.Tx, q *dw.Queries, staged int64) (dw.DwEtlLog, error) {
+	<span class="c">// Estatísticas frescas da staging recém-carregada. ANALYZE não é uma</span>
+	<span class="c">// query que o sqlc gere, então vai direto pela transação.</span>
+	if _, err := tx.Exec(ctx, &quot;ANALYZE dw.stg_sales_territory&quot;); err != nil {
+		return dw.DwEtlLog{}, fmt.Errorf(&quot;analyze staging: %w&quot;, err)
+	}
+
+	expiradas, err := q.ExpireChanged(ctx)
+	if err != nil {
+		return dw.DwEtlLog{}, fmt.Errorf(&quot;fechar versões alteradas: %w&quot;, err)
+	}
+	excluidas, err := q.CloseDeleted(ctx)
+	if err != nil {
+		return dw.DwEtlLog{}, fmt.Errorf(&quot;fechar excluídas: %w&quot;, err)
+	}
+	ins, err := q.InsertNewVersions(ctx)
+	if err != nil {
+		return dw.DwEtlLog{}, fmt.Errorf(&quot;inserir versões: %w&quot;, err)
+	}
+
+	<span class="c">// Invariante: toda versão fechada por mudança ganha exatamente uma nova.</span>
+	if int64(ins.NovasVersoes) != expiradas {
+		return dw.DwEtlLog{}, fmt.Errorf(&quot;inconsistência: %d versões fechadas, %d novas versões&quot;,
+			expiradas, ins.NovasVersoes)
+	}
+
+	logRow, err := q.InsertEtlLog(ctx, dw.InsertEtlLogParams{
+		Processo:     ProcessName,
+		LinhasOrigem: int32(staged),
+		Novas:        ins.Novas,
+		NovasVersoes: ins.NovasVersoes,
+		Reativadas:   ins.Reativadas,
+		Expiradas:    int32(expiradas),
+		Excluidas:    int32(excluidas),
+	})
+	if err != nil {
+		return dw.DwEtlLog{}, fmt.Errorf(&quot;gravar etl_log: %w&quot;, err)
+	}
+	return logRow, nil
+}</pre>
+      </div>
+    </div>
+
+    <div class="pair-label">SQL</div>
+    <div class="pair">
+      <div class="col fn">
+        <div class="col-head"><span class="label-fn"><span class="dot fn"></span>Com função</span><span class="file">db/migrations/002_scd2_funcao.sql</span></div>
+        <p class="note">A regra inteira mora no banco. O sqlc enxerga só a chamada (<code>db/dw/query.sql</code>, seção COM FUNÇÃO):</p>
+        <pre><span class="c">-- name: MergeSalesTerritory :one</span>
+SELECT dw.scd2_merge_sales_territory(sqlc.arg(processo)::text)::bigint AS log_id;
+
+<span class="c">-- name: GetEtlLog :one</span>
+SELECT * FROM dw.etl_log WHERE id = $1;</pre>
+        <pre>CREATE OR REPLACE FUNCTION dw.scd2_merge_sales_territory(p_processo TEXT)
+RETURNS BIGINT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_ts     TIMESTAMPTZ := now();  <span class="c">-- instante da transação: fecha e abre versões no mesmo ponto</span>
+    v_origem INT;
+    v_id     BIGINT;
+BEGIN
+    <span class="c">-- Estatísticas frescas da staging recém-carregada para o planner</span>
+    ANALYZE dw.stg_sales_territory;
+
+    SELECT count(*) INTO v_origem FROM dw.stg_sales_territory;
+    IF v_origem = 0 THEN
+        RAISE EXCEPTION &#x27;staging vazia: carga abortada para não fechar a dimensão inteira&#x27;;
+    END IF;
+
+    <span class="c">-- historico: chaves que já existiam na dimensão, lidas UMA vez.</span>
+    <span class="c">-- MATERIALIZED é necessário: um EXISTS correlacionado sobre a dimensão</span>
+    <span class="c">-- pode virar Seq Scan repetido por linha (quando as estatísticas dizem</span>
+    <span class="c">-- que ela está vazia, p.ex. após TRUNCATE + VACUUM), e cada repetição</span>
+    <span class="c">-- percorre também as páginas que o próprio MERGE acabou de inserir:</span>
+    <span class="c">-- custo quadrático (1 milhão de linhas: minutos em vez de segundos).</span>
+    WITH historico AS MATERIALIZED (
+        SELECT DISTINCT sales_territory_id FROM dw.dim_sales_territory
+    ),
+    resultado AS (
+        MERGE INTO dw.dim_sales_territory AS t
+        USING (
+            SELECT s.sales_territory_id AS merge_key,
+                   s.sales_territory_id, s.region, s.country, s.&quot;group&quot;, s.row_hash,
+                   CASE WHEN h.sales_territory_id IS NOT NULL
+                        THEN &#x27;REATIVADA&#x27; ELSE &#x27;NOVA&#x27; END AS tipo
+            FROM dw.stg_sales_territory s
+            LEFT JOIN historico h ON h.sales_territory_id = s.sales_territory_id
+
+            UNION ALL
+
+            SELECT NULL::INT,
+                   s.sales_territory_id, s.region, s.country, s.&quot;group&quot;, s.row_hash,
+                   &#x27;NOVA_VERSAO&#x27;
+            FROM dw.stg_sales_territory s
+            JOIN dw.dim_sales_territory d
+              ON d.sales_territory_id = s.sales_territory_id
+             AND d.is_current
+            WHERE d.row_hash &lt;&gt; s.row_hash
+        ) AS s
+            ON  t.sales_territory_id = s.merge_key
+            AND t.is_current
+
+        <span class="c">-- Mudou: fecha a versão atual</span>
+        WHEN MATCHED AND t.row_hash &lt;&gt; s.row_hash THEN
+            UPDATE SET valid_to   = v_ts,
+                       is_current = FALSE
+
+        <span class="c">-- Nova chave, reativação ou nova versão</span>
+        WHEN NOT MATCHED BY TARGET THEN
+            INSERT (sales_territory_id, region, country, &quot;group&quot;, row_hash,
+                    valid_from, is_current, is_deleted)
+            VALUES (s.sales_territory_id, s.region, s.country, s.&quot;group&quot;, s.row_hash,
+                    v_ts, TRUE, FALSE)
+
+        <span class="c">-- Sumiu da origem: fecha e marca exclusão (só a versão atual)</span>
+        WHEN NOT MATCHED BY SOURCE AND t.is_current THEN
+            UPDATE SET valid_to   = v_ts,
+                       is_current = FALSE,
+                       is_deleted = TRUE
+
+        RETURNING merge_action() AS acao,
+                  s.tipo         AS tipo,
+                  new.is_deleted AS excluida
+    )
+    INSERT INTO dw.etl_log (processo, inicio, fim, linhas_origem,
+                            novas, novas_versoes, reativadas, expiradas, excluidas)
+    SELECT p_processo, v_ts, clock_timestamp(), v_origem,
+           count(*) FILTER (WHERE acao = &#x27;INSERT&#x27; AND tipo = &#x27;NOVA&#x27;),
+           count(*) FILTER (WHERE acao = &#x27;INSERT&#x27; AND tipo = &#x27;NOVA_VERSAO&#x27;),
+           count(*) FILTER (WHERE acao = &#x27;INSERT&#x27; AND tipo = &#x27;REATIVADA&#x27;),
+           count(*) FILTER (WHERE acao = &#x27;UPDATE&#x27; AND NOT excluida),
+           count(*) FILTER (WHERE acao = &#x27;UPDATE&#x27; AND excluida)
+    FROM resultado
+    RETURNING id INTO v_id;
+
+    RETURN v_id;
+END;
+$$;</pre>
+      </div>
+      <div class="col steps">
+        <div class="col-head"><span class="label-steps"><span class="dot steps"></span>Sem função</span><span class="file">db/dw/query.sql · seção SEM FUNÇÃO</span></div>
+        <p class="note">Cada passo é uma query tipada pelo sqlc, versionada junto com o Go.</p>
+        <pre><span class="c">-- name: ExpireChanged :execrows</span>
+<span class="c">-- Passo 1: fecha a versão atual das chaves cujo hash mudou.</span>
+UPDATE dw.dim_sales_territory AS d
+SET valid_to   = now(),
+    is_current = FALSE
+FROM dw.stg_sales_territory AS s
+WHERE d.sales_territory_id = s.sales_territory_id
+  AND d.is_current
+  AND d.row_hash &lt;&gt; s.row_hash;
+
+<span class="c">-- name: CloseDeleted :execrows</span>
+<span class="c">-- Passo 2: fecha e marca como excluída a versão atual das chaves que</span>
+<span class="c">-- sumiram da origem.</span>
+UPDATE dw.dim_sales_territory AS d
+SET valid_to   = now(),
+    is_current = FALSE,
+    is_deleted = TRUE
+WHERE d.is_current
+  AND NOT EXISTS (SELECT 1 FROM dw.stg_sales_territory s
+                  WHERE s.sales_territory_id = d.sales_territory_id);
+
+<span class="c">-- name: InsertNewVersions :one</span>
+<span class="c">-- Passo 3: insere uma versão atual para toda chave da staging que ficou</span>
+<span class="c">-- sem versão atual. Isso cobre de uma vez:</span>
+<span class="c">--   - chaves novas          (nunca existiram na dimensão)</span>
+<span class="c">--   - novas versões         (acabaram de ser fechadas no passo 1)</span>
+<span class="c">--   - reativações           (só têm histórico antigo, excluído antes)</span>
+<span class="c">-- atuais e historico leem a dimensão como estava ANTES deste INSERT, e são</span>
+<span class="c">-- MATERIALIZED para lê-la uma única vez. Sem isso, quando as estatísticas</span>
+<span class="c">-- dizem que a dimensão está vazia (p.ex. após TRUNCATE + VACUUM), o</span>
+<span class="c">-- planner escolhe Seq Scan da dimensão repetido por linha da staging, e</span>
+<span class="c">-- cada repetição percorre também as páginas que este INSERT acabou de</span>
+<span class="c">-- gravar: custo quadrático (1 milhão de linhas: minutos em vez de segundos).</span>
+WITH atuais AS MATERIALIZED (
+    SELECT sales_territory_id FROM dw.dim_sales_territory WHERE is_current
+),
+historico AS MATERIALIZED (
+    SELECT sales_territory_id,
+           bool_or(valid_to = now() AND NOT is_deleted) AS fechada_agora
+    FROM dw.dim_sales_territory
+    WHERE NOT is_current
+    GROUP BY sales_territory_id
+),
+inseridas AS (
+    INSERT INTO dw.dim_sales_territory
+           (sales_territory_id, region, country, &quot;group&quot;, row_hash, valid_from)
+    SELECT s.sales_territory_id, s.region, s.country, s.&quot;group&quot;, s.row_hash, now()
+    FROM dw.stg_sales_territory s
+    WHERE NOT EXISTS (SELECT 1 FROM atuais a
+                      WHERE a.sales_territory_id = s.sales_territory_id)
+    RETURNING sales_territory_id
+)
+SELECT count(*) FILTER (WHERE h.sales_territory_id IS NULL)::int AS novas,
+       count(*) FILTER (WHERE h.fechada_agora)::int              AS novas_versoes,
+       count(*) FILTER (WHERE NOT h.fechada_agora)::int          AS reativadas
+FROM inseridas i
+LEFT JOIN historico h ON h.sales_territory_id = i.sales_territory_id;
+
+<span class="c">-- name: InsertEtlLog :one</span>
+INSERT INTO dw.etl_log (processo, inicio, fim, linhas_origem,
+                        novas, novas_versoes, reativadas, expiradas, excluidas)
+VALUES (sqlc.arg(processo), now(), clock_timestamp(), sqlc.arg(linhas_origem),
+        sqlc.arg(novas), sqlc.arg(novas_versoes), sqlc.arg(reativadas),
+        sqlc.arg(expiradas), sqlc.arg(excluidas))
+RETURNING *;</pre>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th scope="col"></th><th scope="col" class="th-fn">Com função</th><th scope="col" class="th-steps">Sem função</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Onde fica a regra</th><td>PL/pgSQL, numa migration</td><td><code>query.sql</code>, junto com o Go</td></tr>
+          <tr><th scope="row">Comandos SCD2 por carga</th><td>1 chamada + leitura do log</td><td>4 (<code>ANALYZE</code>, UPDATE, UPDATE, INSERT) + log</td></tr>
+          <tr><th scope="row">Duas ações por mudança</th><td>Staging duplicada com <code>UNION ALL</code> na origem do MERGE</td><td>Comandos separados, sem truque</td></tr>
+          <tr><th scope="row">Contagens</th><td><code>RETURNING merge_action()</code></td><td><code>RowsAffected</code> + CTE no INSERT</td></tr>
+          <tr><th scope="row">Tipagem pelo sqlc</th><td>Só a chamada</td><td>Cada comando</td></tr>
+          <tr><th scope="row">PostgreSQL mínimo</th><td>17 (<code>WHEN NOT MATCHED BY SOURCE</code>)</td><td>Qualquer versão suportada</td></tr>
+          <tr><th scope="row">Restrição “uma versão atual”</th><td>Precisa ser <code>DEFERRABLE</code></td><td>Um índice único comum bastaria</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="bench">
+    <h2 id="bench">Benchmark</h2>
+    <p class="prose">Origem sintética de 10 mil, 100 mil e 1 milhão de territórios. Cada medição é a mediana de 3 execuções de <code>go test -bench</code>, cada uma com 5 cargas. O preparo da origem e o <code>VACUUM ANALYZE</code> de cada carga ficam fora do cronômetro.</p>
+    <ul class="findings">
+      <li><b>A versão sem função foi mais rápida nas 9 combinações de tamanho e cenário.</b> Na média geométrica, as regras SCD2 levam 17% menos tempo; a carga completa, 9% menos.</li>
+      <li><b>A vantagem cresce com o volume nos cenários do dia a dia.</b> Sem mudanças e incremental: 13% mais rápida com 10 mil linhas, 23 a 27% com 100 mil e 24 a 26% com 1 milhão. O MERGE lê a staging duas vezes (<code>UNION ALL</code>) e faz um <i>full join</i> com toda a dimensão; os UPDATEs separados só tocam o que mudou.</li>
+      <li><b>Na carga inicial a diferença vem da restrição, não da função.</b> No mesmo schema, sem função é 5 a 12% mais rápida. Com o índice único comum no lugar do <code>EXCLUDE DEFERRABLE</code>, que a função exige, a vantagem sobe para 15 a 32%.</li>
+      <li><b>As idas extras ao servidor não pesaram com o banco local.</b> Num DW remoto com latência alta, cada um dos 4 comandos extras soma uma ida e volta à versão sem função.</li>
+      <li><b>Foram 3 amostras por medição.</b> O <code>benchstat</code> precisa de 4 a 6 para declarar significância formal. A dispersão ficou abaixo de 5%, exceto no incremental de 1 milhão (cerca de 9%), em que a dimensão cresce de uma carga para a outra.</li>
+
+    </ul>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Métrica">
+        <button type="button" id="m-scd2" aria-pressed="true">Só as regras SCD2</button>
+        <button type="button" id="m-total" aria-pressed="false">Carga completa</button>
+      </div>
+      <div class="legend" aria-label="Legenda">
+        <span><span class="dot fn"></span>funcao</span>
+        <span><span class="dot steps"></span>sem-funcao</span>
+        <span><span class="dot ix"></span>sem-funcao + índice único</span>
+      </div>
+    </div>
+    <div class="panels" id="panels"></div>
+    <p class="meta">Milissegundos por carga; cada painel tem a própria escala, porque os tamanhos diferem em ordens de grandeza. “Só as regras SCD2” mede o passo 5; “carga completa” inclui extração, COPY e COMMIT. <span class="mono">sem-funcao + índice único</span> troca o <code>EXCLUDE DEFERRABLE</code> pelo índice único parcial do projeto original. Apple M4 Pro, PostgreSQL 18 em Docker.</p>
+    <details>
+      <summary>Tabela com todos os resultados</summary>
+      <div class="tbl-wrap"><table id="tbl"></table></div>
+    </details>
+  </section>
+
+  <section aria-labelledby="bug">
+    <h2 id="bug">Defeito encontrado pelo benchmark</h2>
+    <div class="callout">
+      <div class="eyebrow">Afetava as duas estratégias · corrigido</div>
+      <p class="prose">As duas versões originais tinham uma subconsulta correlacionada sobre <code>dw.dim_sales_territory</code> dentro do comando que grava nessa mesma tabela: o <code>EXISTS</code> que classifica “nova × reativada” no MERGE, e o <code>NOT EXISTS</code> e o <code>EXISTS</code> de <code>InsertNewVersions</code>.</p>
+      <p class="prose">Quando as estatísticas dizem que a dimensão está vazia (depois de <code>TRUNCATE</code> seguido de <code>VACUUM</code> ou autovacuum), o planner executa a subconsulta como um Seq Scan repetido para cada linha da staging. Cada repetição percorre também as páginas que o próprio comando acabou de inserir, e o custo fica quadrático. Uma recarga de 1 milhão de linhas não terminava em 60 s. Depois da correção, leva cerca de 4 s.</p>
+      <p class="prose">A correção lê a dimensão uma única vez, em CTEs <code>MATERIALIZED</code> (<code>historico</code> e <code>atuais</code>), antes de gravar. O cenário <code>inicial</code> do benchmark reproduz exatamente essa situação.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="rodar">
+    <h2 id="rodar">Como rodar</h2>
+<pre>docker compose up -d
+go test ./...                                   # testes nas duas estratégias
+go run ./cmd/scd2 -migrate -strategy funcao     # padrão
+go run ./cmd/scd2 -migrate -strategy sem-funcao
+
+go test ./internal/scd2 -run '^$' -bench . -benchtime 5x -count 3 -timeout 90m | tee bench.txt
+benchstat -col /estrategia bench.txt</pre>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const RESULTS = [{"linhas": 10000, "estrategia": "funcao", "cenario": "incremental", "total": 52.811925, "scd2": 32.83, "amostras": 3}, {"linhas": 10000, "estrategia": "funcao", "cenario": "inicial", "total": 62.361, "scd2": 42.51, "amostras": 3}, {"linhas": 10000, "estrategia": "funcao", "cenario": "sem-mudancas", "total": 46.7953, "scd2": 26.69, "amostras": 3}, {"linhas": 10000, "estrategia": "sem-funcao", "cenario": "incremental", "total": 49.897325, "scd2": 28.47, "amostras": 3}, {"linhas": 10000, "estrategia": "sem-funcao", "cenario": "inicial", "total": 60.668325, "scd2": 40.5, "amostras": 3}, {"linhas": 10000, "estrategia": "sem-funcao", "cenario": "sem-mudancas", "total": 43.99775, "scd2": 23.24, "amostras": 3}, {"linhas": 10000, "estrategia": "sem-funcao-indice", "cenario": "incremental", "total": 47.81565, "scd2": 27.61, "amostras": 3}, {"linhas": 10000, "estrategia": "sem-funcao-indice", "cenario": "inicial", "total": 55.727742, "scd2": 36.1, "amostras": 3}, {"linhas": 10000, "estrategia": "sem-funcao-indice", "cenario": "sem-mudancas", "total": 43.507067, "scd2": 23.38, "amostras": 3}, {"linhas": 100000, "estrategia": "funcao", "cenario": "incremental", "total": 375.038483, "scd2": 227.2, "amostras": 3}, {"linhas": 100000, "estrategia": "funcao", "cenario": "inicial", "total": 459.708925, "scd2": 324.1, "amostras": 3}, {"linhas": 100000, "estrategia": "funcao", "cenario": "sem-mudancas", "total": 295.787059, "scd2": 149.0, "amostras": 3}, {"linhas": 100000, "estrategia": "sem-funcao", "cenario": "incremental", "total": 313.378917, "scd2": 165.4, "amostras": 3}, {"linhas": 100000, "estrategia": "sem-funcao", "cenario": "inicial", "total": 457.105284, "scd2": 298.4, "amostras": 3}, {"linhas": 100000, "estrategia": "sem-funcao", "cenario": "sem-mudancas", "total": 264.2366, "scd2": 114.5, "amostras": 3}, {"linhas": 100000, "estrategia": "sem-funcao-indice", "cenario": "incremental", "total": 310.04115, "scd2": 163.2, "amostras": 3}, {"linhas": 100000, "estrategia": "sem-funcao-indice", "cenario": "inicial", "total": 385.821358, "scd2": 249.2, "amostras": 3}, {"linhas": 100000, "estrategia": "sem-funcao-indice", "cenario": "sem-mudancas", "total": 263.3948, "scd2": 113.4, "amostras": 3}, {"linhas": 1000000, "estrategia": "funcao", "cenario": "incremental", "total": 4341.122492, "scd2": 2746.0, "amostras": 3}, {"linhas": 1000000, "estrategia": "funcao", "cenario": "inicial", "total": 3968.635042, "scd2": 2711.0, "amostras": 3}, {"linhas": 1000000, "estrategia": "funcao", "cenario": "sem-mudancas", "total": 2634.932142, "scd2": 1248.0, "amostras": 3}, {"linhas": 1000000, "estrategia": "sem-funcao", "cenario": "incremental", "total": 3487.299225, "scd2": 2033.0, "amostras": 3}, {"linhas": 1000000, "estrategia": "sem-funcao", "cenario": "inicial", "total": 3651.994208, "scd2": 2381.0, "amostras": 3}, {"linhas": 1000000, "estrategia": "sem-funcao", "cenario": "sem-mudancas", "total": 2378.439691, "scd2": 954.7, "amostras": 3}, {"linhas": 1000000, "estrategia": "sem-funcao-indice", "cenario": "incremental", "total": 3506.7987, "scd2": 2025.0, "amostras": 3}, {"linhas": 1000000, "estrategia": "sem-funcao-indice", "cenario": "inicial", "total": 3107.209708, "scd2": 1838.0, "amostras": 3}, {"linhas": 1000000, "estrategia": "sem-funcao-indice", "cenario": "sem-mudancas", "total": 2285.546616, "scd2": 873.6, "amostras": 3}];
+const STRATS = [
+  { key: "funcao", label: "funcao", cls: "fn" },
+  { key: "sem-funcao", label: "sem-funcao", cls: "steps" },
+  { key: "sem-funcao-indice", label: "sem-funcao + índice único", cls: "ix" },
+];
+const SCEN = [
+  { key: "inicial", label: "Inicial" },
+  { key: "sem-mudancas", label: "Sem mudanças" },
+  { key: "incremental", label: "Incremental" },
+];
+const SCEN_HELP = {
+  "inicial": "dimensão truncada; todas as linhas novas",
+  "sem-mudancas": "reexecução sem diferenças",
+  "incremental": "5% alteradas, 1% excluídas, 1% reativadas",
+};
+const sizes = [...new Set(RESULTS.map(r => r.linhas))].sort((a, b) => a - b);
+const get = (n, st, sc) => RESULTS.find(r => r.linhas === n && r.estrategia === st && r.cenario === sc);
+const fmtN = n => n.toLocaleString("pt-BR");
+const fmtMs = v => v >= 100 ? fmtN(Math.round(v)) : v.toLocaleString("pt-BR", { maximumFractionDigits: v >= 10 ? 1 : 2 });
+let metric = "scd2";
+
+function niceMax(v) {
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p;
+  return 10 * p;
+}
+
+const tip = document.getElementById("tip");
+function showTip(e, n, sc) {
+  const rows = STRATS.map(s => {
+    const r = get(n, s.key, sc.key);
+    return r ? `<div class="r"><span><span class="dot ${s.cls}" style="display:inline-block;margin-right:6px"></span>${s.label}</span><span>${fmtMs(r[metric])} ms</span></div>` : "";
+  }).join("");
+  tip.innerHTML = `<div class="t">${sc.label} · ${fmtN(n)} linhas</div>${rows}`;
+  tip.hidden = false;
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + w > innerWidth - 8) x = e.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = e.clientY - h - pad;
+  tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+}
+
+function render() {
+  const host = document.getElementById("panels");
+  host.innerHTML = "";
+  const NS = "http://www.w3.org/2000/svg";
+  for (const n of sizes) {
+    const vals = RESULTS.filter(r => r.linhas === n).map(r => r[metric]);
+    const max = niceMax(Math.max(...vals));
+    const W = 360, L = 8, R = 46, top = 6, barH = 11, gap = 2, groupGap = 30, labelH = 16;
+    const groupH = labelH + STRATS.length * barH + (STRATS.length - 1) * gap;
+    const H = top + SCEN.length * groupH + (SCEN.length - 1) * groupGap + 22;
+    const x = v => L + (v / max) * (W - L - R);
+    const panel = document.createElement("div");
+    panel.className = "panel";
+    panel.innerHTML = `<h3>${fmtN(n)} linhas</h3><div class="sub">ms por carga · escala 0–${fmtMs(max)}</div>`;
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", `Tempo por carga com ${fmtN(n)} linhas`);
+    const axisY = H - 18;
+    for (let i = 0; i <= 4; i++) {
+      const gx = x(max * i / 4);
+      const ln = document.createElementNS(NS, "line");
+      ln.setAttribute("class", "grid"); ln.setAttribute("x1", gx); ln.setAttribute("x2", gx);
+      ln.setAttribute("y1", top); ln.setAttribute("y2", axisY);
+      svg.appendChild(ln);
+      const t = document.createElementNS(NS, "text");
+      t.setAttribute("x", gx); t.setAttribute("y", H - 4);
+      t.setAttribute("text-anchor", i === 0 ? "start" : i === 4 ? "end" : "middle");
+      t.textContent = fmtMs(max * i / 4);
+      svg.appendChild(t);
+    }
+    SCEN.forEach((sc, gi) => {
+      const gy = top + gi * (groupH + groupGap);
+      const g = document.createElementNS(NS, "g");
+      g.setAttribute("class", "row");
+      const cat = document.createElementNS(NS, "text");
+      cat.setAttribute("class", "cat"); cat.setAttribute("x", L); cat.setAttribute("y", gy + 11);
+      cat.textContent = sc.label;
+      g.appendChild(cat);
+      STRATS.forEach((s, si) => {
+        const r = get(n, s.key, sc.key);
+        if (!r) return;
+        const y = gy + labelH + si * (barH + gap);
+        const w = Math.max(2, x(r[metric]) - L);
+        const rad = Math.min(4, w / 2);
+        // Barra com a ponta de dados arredondada (4px) e a base reta no zero.
+        const p = document.createElementNS(NS, "path");
+        p.setAttribute("class", `bar ${s.cls}`);
+        p.setAttribute("d", `M${L},${y} h${w - rad} a${rad},${rad} 0 0 1 ${rad},${rad} v${barH - 2 * rad} a${rad},${rad} 0 0 1 -${rad},${rad} h-${w - rad} z`);
+        g.appendChild(p);
+        const t = document.createElementNS(NS, "text");
+        t.setAttribute("class", "val"); t.setAttribute("x", L + w + 5); t.setAttribute("y", y + barH - 2);
+        t.textContent = fmtMs(r[metric]);
+        g.appendChild(t);
+      });
+      const hit = document.createElementNS(NS, "rect");
+      hit.setAttribute("class", "hit"); hit.setAttribute("x", 0); hit.setAttribute("y", gy - 4);
+      hit.setAttribute("width", W); hit.setAttribute("height", groupH + 8);
+      hit.addEventListener("pointermove", e => showTip(e, n, sc));
+      hit.addEventListener("pointerleave", () => { tip.hidden = true; });
+      g.appendChild(hit);
+      svg.appendChild(g);
+    });
+    panel.appendChild(svg);
+    host.appendChild(panel);
+  }
+}
+
+function renderTable() {
+  const t = document.getElementById("tbl");
+  let h = `<thead><tr><th scope="col">Linhas</th><th scope="col">Cenário</th><th scope="col">Estratégia</th><th scope="col" class="num">SCD2 (ms)</th><th scope="col" class="num">Carga completa (ms)</th><th scope="col" class="num">SCD2 vs funcao</th></tr></thead><tbody>`;
+  for (const n of sizes) for (const sc of SCEN) for (const s of STRATS) {
+    const r = get(n, s.key, sc.key), base = get(n, "funcao", sc.key);
+    if (!r) continue;
+    const rel = base ? r.scd2 / base.scd2 : null;
+    h += `<tr><td class="num">${fmtN(n)}</td><td>${sc.label} <span class="meta">(${SCEN_HELP[sc.key]})</span></td><td><span class="dot ${s.cls}" style="display:inline-block;margin-right:6px"></span>${s.label}</td><td class="num">${fmtMs(r.scd2)}</td><td class="num">${fmtMs(r.total)}</td><td class="num">${s.key === "funcao" ? "—" : rel.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "×"}</td></tr>`;
+  }
+  t.innerHTML = h + "</tbody>";
+}
+
+for (const [id, m] of [["m-scd2", "scd2"], ["m-total", "total"]]) {
+  document.getElementById(id).addEventListener("click", () => {
+    metric = m;
+    document.getElementById("m-scd2").setAttribute("aria-pressed", m === "scd2");
+    document.getElementById("m-total").setAttribute("aria-pressed", m === "total");
+    tip.hidden = true;
+    render();
+  });
+}
+render();
+renderTable();
+</script>
+</body>
+</html>

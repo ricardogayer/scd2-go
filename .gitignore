@@ -1,0 +1,6 @@
+.DS_Store
+# binário de go build ./cmd/scd2
+/scd2
+/bin/
+# saída local do benchmark (o resultado de referência fica em docs/bench.txt)
+/bench.txt
